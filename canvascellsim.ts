@@ -1,19 +1,43 @@
+interface ICanvasCellSimAutomata<T>
+{
+    readonly fnInit:  (x:number,y:number,initial:boolean) => T;
+    readonly fnStep:  (ctxt: CanvasCellSimContext<T>) => boolean; // return if _visual_ state of cell has changed
+    readonly fnApply: (src: T, dst: T) => T;
+    readonly fnColor: (v: T) => string;
+}
 
+class CCSAutomata<T> implements ICanvasCellSimAutomata<T>
+{
+    readonly fnInit:  (x:number,y:number,initial:boolean) => T;
+    readonly fnStep:  (ctxt: CanvasCellSimContext<T>) => boolean; // return if _visual_ state of cell has changed
+    readonly fnApply: (src: T, dst: T) => T;
+    readonly fnColor: (v: T) => string;
+
+
+    constructor(fnInit: (x:number,y:number,initial:boolean) => T,
+                fnStep: (ctxt: CanvasCellSimContext<T>) => boolean,
+                fnApply: (src: T, dst: T) => T,
+                fnColor: (v: T) => string)
+    {
+        this.fnInit  = fnInit;
+        this.fnStep  = fnStep;
+        this.fnApply = fnApply;
+        this.fnColor = fnColor;
+    }
+}
 
 class CanvasCellSim<T>
 {
     canvas: HTMLCanvasElement;
-    dirty: boolean = true;
+    anyDirty: boolean = true;
+    allDirty: boolean = true;
 
     cellSize: number;
     cellBorderSize: number;
 
     context: CanvasCellSimContext<T>;
 
-    fnInit:  (x:number,y:number,initial:boolean) => T;
-    fnStep:  (ctxt: CanvasCellSimContext<T>) => boolean; // return if _visual_ state of cell has changed
-    fnApply: (src: T, dst: T) => T;
-    fnColor: (v: T) => string;
+    automata: ICanvasCellSimAutomata<T>;
 
     grid: CanvasCell<T>[][]; // [backup, value]
     offsetX: number;
@@ -36,20 +60,13 @@ class CanvasCellSim<T>
     ups_delta_counter: number = 0;
     ups: number = 1;
 
-    constructor(selector: string, cellsize: number, cellborder: number,
-                fnInit: (x:number,y:number) => T,
-                fnStep: (ctxt: CanvasCellSimContext<T>) => boolean,
-                fnApply: (src: T, dst: T) => T,
-                fnColor: (v: T) => string)
+    constructor(selector: string, cellsize: number, cellborder: number, automata: ICanvasCellSimAutomata<T>)
     {
         this.canvas = document.querySelector<HTMLCanvasElement>(selector)!;
         this.cellSize = cellsize;
         this.cellBorderSize = cellborder;
 
-        this.fnInit  = fnInit;
-        this.fnStep  = fnStep;
-        this.fnApply = fnApply;
-        this.fnColor = fnColor;
+        this.automata  = automata;
 
         this.grid = [[this.initCell(0,0, true)]];
 
@@ -61,11 +78,34 @@ class CanvasCellSim<T>
 
     initCell(x:number, y:number, initial:boolean): CanvasCell<T>
     {
-        let c1 = this.fnInit(x, y, initial);
-        let c2 = this.fnInit(x, y, initial);
-        c2 = this.fnApply(c1, c2);
+        let c1 = this.automata.fnInit(x, y, initial);
+        let c2 = this.automata.fnInit(x, y, initial);
+        c2 = this.automata.fnApply(c1, c2);
 
-        return new CanvasCell<T>(x, y, c1, c2, this.fnApply);
+        return new CanvasCell<T>(x, y, c1, c2, this.automata.fnApply);
+    }
+
+    tryInit()
+    {
+        if (!this.fully_init)
+        {
+            this.fixGridSizeX(!this.fully_init);
+            this.fixGridSizeY(!this.fully_init);
+            this.fully_init = true;
+        }
+    }
+
+    set(x: number, y:number, value:T): boolean
+    {
+        this.tryInit();
+
+        let rx = x + this.offsetX;
+        let ry = y + this.offsetY;
+
+        if (rx < 0 || ry < 0 || rx >= this.offsetX || ry >= this.offsetY) return false;
+
+        this.grid[ry][rx].value = value;
+        return true;
     }
 
     step()
@@ -90,9 +130,9 @@ class CanvasCellSim<T>
                 this.context.y     = gy - this.offsetY;
                 this.context.value = this.grid[gy][gx].value;
 
-                let changed = this.fnStep(this.context);
+                let changed = this.automata.fnStep(this.context);
                 this.grid[gy][gx].value = this.context.value;
-                if (changed) this.dirty = this.grid[gy][gx].dirty = true;
+                if (changed) this.anyDirty = this.grid[gy][gx].dirty = true;
             }
         }
     }
@@ -102,13 +142,13 @@ class CanvasCellSim<T>
         const curr = this.grid[0].length;
         const calc = Math.ceil(((this.canvas.clientWidth / this.cellSize)-1)/2)*2 + 1 + 2*this.cellBorderSize;
 
-        if (this.canvas.width !== this.canvas.getBoundingClientRect().width) this.canvas.width = this.canvas.getBoundingClientRect().width;
+        if (this.canvas.width !== this.canvas.getBoundingClientRect().width)
+        {
+            this.canvas.width = this.canvas.getBoundingClientRect().width;
+            this.anyDirty = this.allDirty = true;
+        }
 
         if (curr === calc) return;
-
-        console.log("fixGridSizeX");
-
-        this.canvas.width = this.canvas.getBoundingClientRect().width;
 
         if (calc > curr)
         {
@@ -143,11 +183,13 @@ class CanvasCellSim<T>
         const curr = this.grid.length;
         const calc = Math.ceil(((this.canvas.clientHeight / this.cellSize)-1)/2)*2 + 1 + 2*this.cellBorderSize;
 
-        if (this.canvas.height !== this.canvas.getBoundingClientRect().height) this.canvas.height = this.canvas.getBoundingClientRect().height;
+        if (this.canvas.height !== this.canvas.getBoundingClientRect().height)
+        {
+            this.canvas.height = this.canvas.getBoundingClientRect().height;
+            this.anyDirty = this.allDirty = true;
+        }
 
         if (curr === calc) return;
-
-        console.log("fixGridSizeY");
 
         if (calc > curr)
         {
@@ -178,7 +220,7 @@ class CanvasCellSim<T>
 
     draw()
     {
-        if (!this.dirty) return;
+        if (!this.anyDirty) return;
 
         let width  = this.grid[0].length;
         let height = this.grid.length;
@@ -194,22 +236,22 @@ class CanvasCellSim<T>
                 const cx = Math.floor(canvasWidth/2)  + (gx-this.offsetX)*this.cellSize - this.cellSize/2;
                 const cy = Math.floor(canvasHeight/2) + (gy-this.offsetY)*this.cellSize - this.cellSize/2;
 
-                if (this.grid[gy][gx].dirty)
+                if (this.grid[gy][gx].dirty || this.allDirty)
                 {
                     this.grid[gy][gx].dirty = false;
 
-                    ctx.fillStyle = this.fnColor(this.grid[gy][gx].value);
+                    ctx.fillStyle = this.automata.fnColor(this.grid[gy][gx].value);
                     ctx.fillRect(cx, cy, this.cellSize, this.cellSize);
                 }
             }
         }
 
-        this.dirty = false;
+        this.allDirty = this.anyDirty = false;
     }
 
     startStepping(interval: number)
     {
-        this.step();
+        this.tryInit();
 
         clearInterval(this.iv_step);
         this.iv_step = setInterval(() =>
@@ -333,6 +375,16 @@ class CanvasCellSimContext<T>
         return this.sim.grid[gy][gx].value_backup;
     }
 
+    getRelativeNullable(dx: number, dy: number): T|null
+    {
+        let gx = this.x + this.sim.offsetX + dx;
+        let gy = this.y + this.sim.offsetY + dy;
+
+        if (gx<0 || gy<0 || gx >= this.gridWidth || gy >= this.gridHeight) return null;
+
+        return this.sim.grid[gy][gx].value_backup;
+    }
+
     countMooreNeighborsWrapped(fn: (cell:T)=>boolean): number
     {
         let c = 0;
@@ -387,6 +439,59 @@ class CanvasCellSimContext<T>
         if (fn(this.getRelativeClamped(-1, 0, def))) c++;
 
         return c;
+    }
+
+    anyMooreNeighborsWrapped(fn: (cell:T)=>boolean): boolean
+    {
+        if (fn(this.getRelativeWrapped(-1,-1))) return true;
+        if (fn(this.getRelativeWrapped( 0,-1))) return true;
+        if (fn(this.getRelativeWrapped(+1,-1))) return true;
+        if (fn(this.getRelativeWrapped(+1, 0))) return true;
+        if (fn(this.getRelativeWrapped(+1,+1))) return true;
+        if (fn(this.getRelativeWrapped( 0,+1))) return true;
+        if (fn(this.getRelativeWrapped(-1,+1))) return true;
+        if (fn(this.getRelativeWrapped(-1, 0))) return true;
+
+        return false;
+    }
+
+    anyNeumannNeighborsWrapped(fn: (cell:T)=>boolean): boolean
+    {
+        if (fn(this.getRelativeWrapped( 0,-1))) return true;
+        if (fn(this.getRelativeWrapped(+1, 0))) return true;
+        if (fn(this.getRelativeWrapped( 0,+1))) return true;
+        if (fn(this.getRelativeWrapped(-1, 0))) return true;
+
+        return false;
+    }
+
+    anyMooreNeighborsClamped(fn: (cell:T)=>boolean): boolean
+    {
+        let v: T|null;
+
+        if ((v = this.getRelativeNullable(-1,-1)) != null && fn(v)) return true;
+        if ((v = this.getRelativeNullable(-1,-1)) != null && fn(v)) return true;
+        if ((v = this.getRelativeNullable( 0,-1)) != null && fn(v)) return true;
+        if ((v = this.getRelativeNullable(+1,-1)) != null && fn(v)) return true;
+        if ((v = this.getRelativeNullable(+1, 0)) != null && fn(v)) return true;
+        if ((v = this.getRelativeNullable(+1,+1)) != null && fn(v)) return true;
+        if ((v = this.getRelativeNullable( 0,+1)) != null && fn(v)) return true;
+        if ((v = this.getRelativeNullable(-1,+1)) != null && fn(v)) return true;
+        if ((v = this.getRelativeNullable(-1, 0)) != null && fn(v)) return true;
+
+        return false;
+    }
+
+    anyNeumannNeighborsClamped(fn: (cell:T)=>boolean): boolean
+    {
+        let v: T|null;
+
+        if ((v = this.getRelativeNullable( 0,-1)) != null && fn(v)) return true;
+        if ((v = this.getRelativeNullable(+1, 0)) != null && fn(v)) return true;
+        if ((v = this.getRelativeNullable( 0,+1)) != null && fn(v)) return true;
+        if ((v = this.getRelativeNullable(-1, 0)) != null && fn(v)) return true;
+
+        return false
     }
 
 }

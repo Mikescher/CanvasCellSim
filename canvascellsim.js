@@ -1,7 +1,16 @@
 "use strict";
+class CCSAutomata {
+    constructor(fnInit, fnStep, fnApply, fnColor) {
+        this.fnInit = fnInit;
+        this.fnStep = fnStep;
+        this.fnApply = fnApply;
+        this.fnColor = fnColor;
+    }
+}
 class CanvasCellSim {
-    constructor(selector, cellsize, cellborder, fnInit, fnStep, fnApply, fnColor) {
-        this.dirty = true;
+    constructor(selector, cellsize, cellborder, automata) {
+        this.anyDirty = true;
+        this.allDirty = true;
         this.fully_init = false;
         this.iv_step = 0;
         this.iv_draw = 0;
@@ -18,20 +27,33 @@ class CanvasCellSim {
         this.canvas = document.querySelector(selector);
         this.cellSize = cellsize;
         this.cellBorderSize = cellborder;
-        this.fnInit = fnInit;
-        this.fnStep = fnStep;
-        this.fnApply = fnApply;
-        this.fnColor = fnColor;
+        this.automata = automata;
         this.grid = [[this.initCell(0, 0, true)]];
         this.context = new CanvasCellSimContext(this, this.grid[0][0].value);
         this.offsetX = 0;
         this.offsetY = 0;
     }
     initCell(x, y, initial) {
-        let c1 = this.fnInit(x, y, initial);
-        let c2 = this.fnInit(x, y, initial);
-        c2 = this.fnApply(c1, c2);
-        return new CanvasCell(x, y, c1, c2, this.fnApply);
+        let c1 = this.automata.fnInit(x, y, initial);
+        let c2 = this.automata.fnInit(x, y, initial);
+        c2 = this.automata.fnApply(c1, c2);
+        return new CanvasCell(x, y, c1, c2, this.automata.fnApply);
+    }
+    tryInit() {
+        if (!this.fully_init) {
+            this.fixGridSizeX(!this.fully_init);
+            this.fixGridSizeY(!this.fully_init);
+            this.fully_init = true;
+        }
+    }
+    set(x, y, value) {
+        this.tryInit();
+        let rx = x + this.offsetX;
+        let ry = y + this.offsetY;
+        if (rx < 0 || ry < 0 || rx >= this.offsetX || ry >= this.offsetY)
+            return false;
+        this.grid[ry][rx].value = value;
+        return true;
     }
     step() {
         this.fixGridSizeX(!this.fully_init);
@@ -49,22 +71,22 @@ class CanvasCellSim {
                 this.context.x = gx - this.offsetX;
                 this.context.y = gy - this.offsetY;
                 this.context.value = this.grid[gy][gx].value;
-                let changed = this.fnStep(this.context);
+                let changed = this.automata.fnStep(this.context);
                 this.grid[gy][gx].value = this.context.value;
                 if (changed)
-                    this.dirty = this.grid[gy][gx].dirty = true;
+                    this.anyDirty = this.grid[gy][gx].dirty = true;
             }
         }
     }
     fixGridSizeX(initial) {
         const curr = this.grid[0].length;
         const calc = Math.ceil(((this.canvas.clientWidth / this.cellSize) - 1) / 2) * 2 + 1 + 2 * this.cellBorderSize;
-        if (this.canvas.width !== this.canvas.getBoundingClientRect().width)
+        if (this.canvas.width !== this.canvas.getBoundingClientRect().width) {
             this.canvas.width = this.canvas.getBoundingClientRect().width;
+            this.anyDirty = this.allDirty = true;
+        }
         if (curr === calc)
             return;
-        console.log("fixGridSizeX");
-        this.canvas.width = this.canvas.getBoundingClientRect().width;
         if (calc > curr) {
             let inc = (calc - curr) / 2;
             for (let y = 0; y < this.grid.length; y++) {
@@ -89,11 +111,12 @@ class CanvasCellSim {
     fixGridSizeY(initial) {
         const curr = this.grid.length;
         const calc = Math.ceil(((this.canvas.clientHeight / this.cellSize) - 1) / 2) * 2 + 1 + 2 * this.cellBorderSize;
-        if (this.canvas.height !== this.canvas.getBoundingClientRect().height)
+        if (this.canvas.height !== this.canvas.getBoundingClientRect().height) {
             this.canvas.height = this.canvas.getBoundingClientRect().height;
+            this.anyDirty = this.allDirty = true;
+        }
         if (curr === calc)
             return;
-        console.log("fixGridSizeY");
         if (calc > curr) {
             let inc = (calc - curr) / 2;
             for (let i = 0; i < inc; i++) {
@@ -118,7 +141,7 @@ class CanvasCellSim {
         }
     }
     draw() {
-        if (!this.dirty)
+        if (!this.anyDirty)
             return;
         let width = this.grid[0].length;
         let height = this.grid.length;
@@ -129,17 +152,17 @@ class CanvasCellSim {
             for (let gx = 0; gx < width; gx++) {
                 const cx = Math.floor(canvasWidth / 2) + (gx - this.offsetX) * this.cellSize - this.cellSize / 2;
                 const cy = Math.floor(canvasHeight / 2) + (gy - this.offsetY) * this.cellSize - this.cellSize / 2;
-                if (this.grid[gy][gx].dirty) {
+                if (this.grid[gy][gx].dirty || this.allDirty) {
                     this.grid[gy][gx].dirty = false;
-                    ctx.fillStyle = this.fnColor(this.grid[gy][gx].value);
+                    ctx.fillStyle = this.automata.fnColor(this.grid[gy][gx].value);
                     ctx.fillRect(cx, cy, this.cellSize, this.cellSize);
                 }
             }
         }
-        this.dirty = false;
+        this.allDirty = this.anyDirty = false;
     }
     startStepping(interval) {
-        this.step();
+        this.tryInit();
         clearInterval(this.iv_step);
         this.iv_step = setInterval(() => {
             const t0 = Date.now();
@@ -214,6 +237,13 @@ class CanvasCellSimContext {
             return def;
         return this.sim.grid[gy][gx].value_backup;
     }
+    getRelativeNullable(dx, dy) {
+        let gx = this.x + this.sim.offsetX + dx;
+        let gy = this.y + this.sim.offsetY + dy;
+        if (gx < 0 || gy < 0 || gx >= this.gridWidth || gy >= this.gridHeight)
+            return null;
+        return this.sim.grid[gy][gx].value_backup;
+    }
     countMooreNeighborsWrapped(fn) {
         let c = 0;
         if (fn(this.getRelativeWrapped(-1, -1)))
@@ -277,5 +307,69 @@ class CanvasCellSimContext {
         if (fn(this.getRelativeClamped(-1, 0, def)))
             c++;
         return c;
+    }
+    anyMooreNeighborsWrapped(fn) {
+        if (fn(this.getRelativeWrapped(-1, -1)))
+            return true;
+        if (fn(this.getRelativeWrapped(0, -1)))
+            return true;
+        if (fn(this.getRelativeWrapped(+1, -1)))
+            return true;
+        if (fn(this.getRelativeWrapped(+1, 0)))
+            return true;
+        if (fn(this.getRelativeWrapped(+1, +1)))
+            return true;
+        if (fn(this.getRelativeWrapped(0, +1)))
+            return true;
+        if (fn(this.getRelativeWrapped(-1, +1)))
+            return true;
+        if (fn(this.getRelativeWrapped(-1, 0)))
+            return true;
+        return false;
+    }
+    anyNeumannNeighborsWrapped(fn) {
+        if (fn(this.getRelativeWrapped(0, -1)))
+            return true;
+        if (fn(this.getRelativeWrapped(+1, 0)))
+            return true;
+        if (fn(this.getRelativeWrapped(0, +1)))
+            return true;
+        if (fn(this.getRelativeWrapped(-1, 0)))
+            return true;
+        return false;
+    }
+    anyMooreNeighborsClamped(fn) {
+        let v;
+        if ((v = this.getRelativeNullable(-1, -1)) != null && fn(v))
+            return true;
+        if ((v = this.getRelativeNullable(-1, -1)) != null && fn(v))
+            return true;
+        if ((v = this.getRelativeNullable(0, -1)) != null && fn(v))
+            return true;
+        if ((v = this.getRelativeNullable(+1, -1)) != null && fn(v))
+            return true;
+        if ((v = this.getRelativeNullable(+1, 0)) != null && fn(v))
+            return true;
+        if ((v = this.getRelativeNullable(+1, +1)) != null && fn(v))
+            return true;
+        if ((v = this.getRelativeNullable(0, +1)) != null && fn(v))
+            return true;
+        if ((v = this.getRelativeNullable(-1, +1)) != null && fn(v))
+            return true;
+        if ((v = this.getRelativeNullable(-1, 0)) != null && fn(v))
+            return true;
+        return false;
+    }
+    anyNeumannNeighborsClamped(fn) {
+        let v;
+        if ((v = this.getRelativeNullable(0, -1)) != null && fn(v))
+            return true;
+        if ((v = this.getRelativeNullable(+1, 0)) != null && fn(v))
+            return true;
+        if ((v = this.getRelativeNullable(0, +1)) != null && fn(v))
+            return true;
+        if ((v = this.getRelativeNullable(-1, 0)) != null && fn(v))
+            return true;
+        return false;
     }
 }

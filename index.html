@@ -13,6 +13,7 @@
     </style>
 
     <script type="application/javascript" src="canvascellsim.js"></script>
+    <script type="application/javascript" src="ccs_examples.js"></script>
 </head>
 <body>
 
@@ -54,10 +55,15 @@
         return (cell === 1) ? '#F00' : '#222';
     }
 
-    automata = new CanvasCellSim('#output', 4, 2, init, step, apply, color);
+    //automata = new CanvasCellSim('#output', 4, 2, GameOfLife.pentomino(Colors.Parse('#F00'), Colors.Parse('#222')));
+    //automata = new CanvasCellSim('#output', 4, 2, ForestFire.new(Colors.Parse('#346524'), Colors.Parse('#D04648'), Colors.Parse('#FFF')));
+    //automata = new CanvasCellSim('#output', 8, 2, Cyclic.new());
+    //automata = new CanvasCellSim('#output', 6, 2, SpidersAndMosquitoes.new(Colors.Parse('#FF0055'), Colors.Parse('#DDDD33'), Colors.Parse('#000000')));
+    //automata = new CanvasCellSim('#output', 8, 2, Cyclic2.new());
+    automata = new CanvasCellSim('#output', 4, 2, Caves.new(Colors.Parse('#FFF'), Colors.Parse('#444')));
 
     automata.startDrawing();
-    automata.startStepping(16);
+    automata.startStepping(64);
 
 </script>
 
