@@ -357,9 +357,8 @@ class Cyclic
 
 class Cyclic2
 {
-    public static new(): CCSAutomata<number>
-    {
-        let colors: string[] = [
+    public static colorful(): CCSAutomata<number> {
+        let colors = [
             Colors.ToCSS(Colors.Parse('rgba(255,0,0,1)')!),
             Colors.ToCSS(Colors.Parse('rgba(255,96,0,1)')!),
             Colors.ToCSS(Colors.Parse('rgba(255,191,0,1)')!),
@@ -378,14 +377,36 @@ class Cyclic2
             Colors.ToCSS(Colors.Parse('rgba(255,0,96,1)')!),
         ];
 
+        return Cyclic2.new(colors);
+    }
+
+    public static gradient(start: Color, end: Color): CCSAutomata<number> {
+        let colors = [
+            Colors.ToCSS(Colors.Mix(start, end, 0/5)),
+            Colors.ToCSS(Colors.Mix(start, end, 1/5)),
+            Colors.ToCSS(Colors.Mix(start, end, 2/5)),
+            Colors.ToCSS(Colors.Mix(start, end, 3/5)),
+            Colors.ToCSS(Colors.Mix(start, end, 4/5)),
+            Colors.ToCSS(Colors.Mix(start, end, 5/5)),
+            Colors.ToCSS(Colors.Mix(start, end, 4/5)),
+            Colors.ToCSS(Colors.Mix(start, end, 3/5)),
+            Colors.ToCSS(Colors.Mix(start, end, 2/5)),
+            Colors.ToCSS(Colors.Mix(start, end, 1/5)),
+        ];
+
+        return Cyclic2.new(colors);
+    }
+
+    public static new(colors: string[]): CCSAutomata<number>
+    {
         function init(x:number, y:number, initial:boolean): number
         {
-            return Math.floor(Math.random()*16);
+            return Math.floor(Math.random()*colors.length);
         }
 
         function step(context: CanvasCellSimContext<number>): boolean
         {
-            const next = (context.value + Math.floor(Math.random()*2)) % 16;
+            const next = (context.value + Math.floor(Math.random()*2)) % colors.length;
             if (context.anyMooreNeighborsClamped((c) => c === next)) { context.value = next; return true; }
             return false;
         }

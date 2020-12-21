@@ -1,63 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Demo</title>
+    <head>
+        <meta charset="UTF-8">
+        <title>Demo</title>
 
-    <style type="text/css">
-        * { margin: 0; padding: 0; }
+        <style type="text/css">
+            * { margin: 0; padding: 0; }
 
-        html { background-color: #CCC; width: 100%; height: 100%; }
+            html { background-color: #CCC; width: 100%; height: 100%; }
 
-        body { width: 100%; height: 100%; }
+            body { width: 100%; height: 100%; }
 
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
+            body {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+            }
 
-        a {
-            background-color: #555;
-            color: #EEE;
-            text-decoration: none;
-            font-size: 2rem;
+            #fmog {
+                 position: absolute;
+                 left: 0;
+                 top: 0;
+             }
 
-            margin: 0.25rem;
-            padding: 0.25rem;
+            .btn {
+                background-color: #555;
+                color: #EEE;
+                text-decoration: none;
+                font-size: 2rem;
 
-            border-radius: 0.5rem;
+                margin: 0.25rem;
+                padding: 0.25rem;
 
-            min-width: 400px;
+                border-radius: 0.5rem;
 
-            text-align: center;
-        }
+                min-width: 400px;
 
-        a:hover {
-            background-color: #55F;
-        }
-    </style>
+                text-align: center;
+            }
 
-    <script type="application/javascript" src="canvascellsim.js"></script>
-    <script type="application/javascript" src="ccs_examples.js"></script>
-</head>
-<body>
+            .btn:hover {
+                background-color: #55F;
+            }
 
-<a href="example.html#pentomino">Game of Life: f-pentomino</a>
-<a href="example.html#gol">Game of Life: random</a>
-<a href="example.html#gol2">Game of Life (fading)</a>
-<a href="example.html#forestfire">Forest Fire</a>
-<a href="example.html#mosquitoes">Spiders and Mosquitoes</a>
-<a href="example.html#cyclic">Cyclic</a>
-<a href="example.html#cyclic2">Cyclic 2</a>
-<a href="example.html#caves">Caves</a>
-<a href="example.html#maze">Maze</a>
-<a href="example.html#maze2">Maze2</a>
-<a href="example.html#seed">Seed</a>
-<a href="example.html#seed2">Seed 2</a>
-<a href="example.html#lwd">Live without Death</a>
-<a href="example.html#flock">Flock</a>
+            canvas { background-color: transparent; width: 100%; height: 100%; margin: 0; position: fixed; left: 0; top: 0; z-index: -1; }
+        </style>
 
-</body>
+        <script type="application/javascript" src="canvascellsim.js"></script>
+        <script type="application/javascript" src="ccs_examples.js"></script>
+    </head>
+    <body>
+        <a id="fmog" href="https://github.com/Mikescher/CanvasCellSim"><img loading="lazy" width="149" height="149" src="https://github.blog/wp-content/uploads/2008/12/forkme_left_darkblue_121621.png?resize=149%2C149" class="attachment-full size-full" alt="Fork me on GitHub" data-recalc-dims="1"></a>
+
+        <canvas id="output"></canvas>
+
+        <a class="btn" href="example.html#pentomino">Game of Life: f-pentomino</a>
+        <a class="btn" href="example.html#gol">Game of Life: random</a>
+        <a class="btn" href="example.html#gol2">Game of Life (fading)</a>
+        <a class="btn" href="example.html#forestfire">Forest Fire</a>
+        <a class="btn" href="example.html#mosquitoes">Spiders and Mosquitoes</a>
+        <a class="btn" href="example.html#cyclic">Cyclic</a>
+        <a class="btn" href="example.html#cyclic2">Cyclic 2</a>
+        <a class="btn" href="example.html#caves">Caves</a>
+        <a class="btn" href="example.html#maze">Maze</a>
+        <a class="btn" href="example.html#maze2">Maze2</a>
+        <a class="btn" href="example.html#seed">Seed</a>
+        <a class="btn" href="example.html#seed2">Seed 2</a>
+        <a class="btn" href="example.html#lwd">Live without Death</a>
+        <a class="btn" href="example.html#flock">Flock</a>
+
+
+        <script type="application/javascript">
+            automata = new CanvasCellSim('#output', 10, 2, Cyclic2.gradient(Colors.Parse('#888'), Colors.Parse('#EEE')));
+            automata.startDrawing();
+            automata.startStepping(64);
+        </script>
+
+    </body>
 </html>

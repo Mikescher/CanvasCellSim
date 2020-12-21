@@ -148,13 +148,13 @@ class GameOfLife {
         const id_on = 8;
         const colors = [
             Colors.ToCSS(colorOff),
-            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 1 / 16)),
-            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 2 / 16)),
-            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 3 / 16)),
-            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 4 / 16)),
-            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 5 / 16)),
-            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 6 / 16)),
-            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 7 / 16)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 1 / 8)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 2 / 8)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 3 / 8)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 4 / 8)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 5 / 8)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 6 / 8)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 7 / 8)),
             Colors.ToCSS(colorOn),
         ];
         function init(x, y, initial) {
@@ -306,7 +306,7 @@ class Cyclic {
     }
 }
 class Cyclic2 {
-    static new() {
+    static colorful() {
         let colors = [
             Colors.ToCSS(Colors.Parse('rgba(255,0,0,1)')),
             Colors.ToCSS(Colors.Parse('rgba(255,96,0,1)')),
@@ -325,11 +325,29 @@ class Cyclic2 {
             Colors.ToCSS(Colors.Parse('rgba(255,0,191,1)')),
             Colors.ToCSS(Colors.Parse('rgba(255,0,96,1)')),
         ];
+        return Cyclic2.new(colors);
+    }
+    static gradient(start, end) {
+        let colors = [
+            Colors.ToCSS(Colors.Mix(start, end, 0 / 5)),
+            Colors.ToCSS(Colors.Mix(start, end, 1 / 5)),
+            Colors.ToCSS(Colors.Mix(start, end, 2 / 5)),
+            Colors.ToCSS(Colors.Mix(start, end, 3 / 5)),
+            Colors.ToCSS(Colors.Mix(start, end, 4 / 5)),
+            Colors.ToCSS(Colors.Mix(start, end, 5 / 5)),
+            Colors.ToCSS(Colors.Mix(start, end, 4 / 5)),
+            Colors.ToCSS(Colors.Mix(start, end, 3 / 5)),
+            Colors.ToCSS(Colors.Mix(start, end, 2 / 5)),
+            Colors.ToCSS(Colors.Mix(start, end, 1 / 5)),
+        ];
+        return Cyclic2.new(colors);
+    }
+    static new(colors) {
         function init(x, y, initial) {
-            return Math.floor(Math.random() * 16);
+            return Math.floor(Math.random() * colors.length);
         }
         function step(context) {
-            const next = (context.value + Math.floor(Math.random() * 2)) % 16;
+            const next = (context.value + Math.floor(Math.random() * 2)) % colors.length;
             if (context.anyMooreNeighborsClamped((c) => c === next)) {
                 context.value = next;
                 return true;
