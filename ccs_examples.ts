@@ -23,32 +23,17 @@ class Colors
 
     static dummy_context: CanvasRenderingContext2D|null = null;
 
-    // https://stackoverflow.com/a/19366389
-    static Parse(col: string): Color|null
+    // https://stackoverflow.com/a/11068286
+    static Parse(input: string): Color|null
     {
-        if (Colors.dummy_context === null)
-        {
-            const canvas = document.createElement('canvas');
-            canvas.width = canvas.height = 1;
-            Colors.dummy_context = canvas.getContext('2d');
-        }
-
-        const ctx = Colors.dummy_context!;
-
-        ctx.clearRect(0, 0, 1, 1);
-        // In order to detect invalid values,
-        // we can't rely on col being in the same format as what fillStyle is computed as,
-        // but we can ask it to implicitly compute a normalized value twice and compare.
-        ctx.fillStyle = '#000';
-        ctx.fillStyle = col;
-        const computed = ctx.fillStyle;
-        ctx.fillStyle = '#fff';
-        ctx.fillStyle = col;
-        if (computed !== ctx.fillStyle) return null; // invalid color
-        ctx.fillRect(0, 0, 1, 1);
-
-        const d = [...ctx.getImageData(0, 0, 1, 1).data];
-        return [ d[0], d[1], d[2] ];
+        let div = document.createElement('div');
+        div.style.color = input;
+        div.style.display = "hidden";
+        window.document.body.appendChild(div);
+        let m = getComputedStyle(div).color.match(/^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i);
+        window.document.body.removeChild(div);
+        if(m) return [parseInt(m[1]),parseInt(m[2]),parseInt(m[3])];
+        else throw new Error("Colour "+input+" could not be parsed.");
     }
 
     static Mix(c1: Color, c2: Color, factor: number): Color {
@@ -381,7 +366,7 @@ class SpidersAndMosquitoes
 
         function init(x:number, y:number, initial:boolean): number
         {
-            return Math.floor(Math.random()*3);
+            return (initial && Math.random()<0.95) ? 0 : Math.floor(Math.random()*3);
         }
 
         function step(context: CanvasCellSimContext<number>): boolean

@@ -5,11 +5,38 @@
     <title>Demo</title>
 
     <style type="text/css">
-        *    { margin: 0; padding: 0; }
-        html { background-color: #808; width: 100%; height: 100%; }
+        * { margin: 0; padding: 0; }
+
+        html { background-color: #CCC; width: 100%; height: 100%; }
+
         body { width: 100%; height: 100%; }
 
-        canvas { background-color: #F0F; width: calc(100% - 50px); height: calc(100% - 50px); margin: 25px; }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        a {
+            background-color: #555;
+            color: #EEE;
+            text-decoration: none;
+            font-size: 2rem;
+
+            margin: 0.25rem;
+            padding: 0.25rem;
+
+            border-radius: 0.5rem;
+
+            min-width: 400px;
+
+            text-align: center;
+        }
+
+        a:hover {
+            background-color: #55F;
+        }
     </style>
 
     <script type="application/javascript" src="canvascellsim.js"></script>
@@ -17,55 +44,13 @@
 </head>
 <body>
 
-<canvas id="output"></canvas>
-
-<script type="application/javascript">
-
-    function init(x,y,initial)
-    {
-        if (!initial) return 0;
-        return Math.random()>0.5 ? 1 : 0;
-    }
-
-    function step(context)
-    {
-        const n = context.countMooreNeighborsWrapped((v) => v===1);
-
-        //{ context.value = Math.random()>0.5 ? 1 : 0; return true; }
-
-        if (context.value === 1)
-        {
-            if (n < 2 || n > 3) { context.value = 0; return true; }
-        }
-        else
-        {
-            if (n === 3) { context.value = 1; return true; }
-        }
-        return false;
-    }
-
-    function apply(src, dst)
-    {
-        // dst.data = src.data;
-        return src;
-    }
-
-    function color(cell)
-    {
-        return (cell === 1) ? '#F00' : '#222';
-    }
-
-    //automata = new CanvasCellSim('#output', 4, 2, GameOfLife.pentomino(Colors.Parse('#F00'), Colors.Parse('#222')));
-    //automata = new CanvasCellSim('#output', 4, 2, ForestFire.new(Colors.Parse('#346524'), Colors.Parse('#D04648'), Colors.Parse('#FFF')));
-    //automata = new CanvasCellSim('#output', 8, 2, Cyclic.new());
-    //automata = new CanvasCellSim('#output', 6, 2, SpidersAndMosquitoes.new(Colors.Parse('#FF0055'), Colors.Parse('#DDDD33'), Colors.Parse('#000000')));
-    //automata = new CanvasCellSim('#output', 8, 2, Cyclic2.new());
-    automata = new CanvasCellSim('#output', 4, 2, Caves.new(Colors.Parse('#FFF'), Colors.Parse('#444')));
-
-    automata.startDrawing();
-    automata.startStepping(64);
-
-</script>
+<a href="example.html#pentomino">Game of Life: f-pentomino</a>
+<a href="example.html#gol">Game of Life: random</a>
+<a href="example.html#forestfire">Forest Fire</a>
+<a href="example.html#mosquitoes">Spiders and Mosquitoes</a>
+<a href="example.html#cyclic">Cyclic</a>
+<a href="example.html#cyclic2">Cyclic 2</a>
+<a href="example.html#caves">Caves</a>
 
 </body>
 </html>

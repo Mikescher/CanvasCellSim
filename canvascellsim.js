@@ -147,7 +147,7 @@ class CanvasCellSim {
         let height = this.grid.length;
         let canvasWidth = this.canvas.clientWidth;
         let canvasHeight = this.canvas.clientHeight;
-        var ctx = this.canvas.getContext('2d', { alpha: false });
+        const ctx = this.canvas.getContext('2d', { alpha: false });
         for (let gy = 0; gy < height; gy++) {
             for (let gx = 0; gx < width; gx++) {
                 const cx = Math.floor(canvasWidth / 2) + (gx - this.offsetX) * this.cellSize - this.cellSize / 2;
@@ -196,7 +196,7 @@ class CanvasCellSim {
                 this.fps_time = Date.now();
                 this.fps_counter = 0;
                 this.fps_delta_counter = 0;
-                console.log("FPS: " + this.fps + " (possible: " + (1000 / this.fps_delta) + ")    |    UPS: " + this.ups + " (possible: " + (1000 / this.ups_delta) + ")");
+                //console.log("FPS: " + this.fps + " (possible: " + (1000/this.fps_delta) + ")    |    UPS: " + this.ups + " (possible: " + (1000/this.ups_delta) + ")");
             }
             requestAnimationFrame(fn);
         };

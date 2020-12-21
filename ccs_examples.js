@@ -5,28 +5,18 @@ class Colors {
             + c[1].toString(16).padStart(2, '0')
             + c[2].toString(16).padStart(2, '0');
     }
-    // https://stackoverflow.com/a/19366389
-    static Parse(col) {
-        if (Colors.dummy_context === null) {
-            const canvas = document.createElement('canvas');
-            canvas.width = canvas.height = 1;
-            Colors.dummy_context = canvas.getContext('2d');
-        }
-        const ctx = Colors.dummy_context;
-        ctx.clearRect(0, 0, 1, 1);
-        // In order to detect invalid values,
-        // we can't rely on col being in the same format as what fillStyle is computed as,
-        // but we can ask it to implicitly compute a normalized value twice and compare.
-        ctx.fillStyle = '#000';
-        ctx.fillStyle = col;
-        const computed = ctx.fillStyle;
-        ctx.fillStyle = '#fff';
-        ctx.fillStyle = col;
-        if (computed !== ctx.fillStyle)
-            return null; // invalid color
-        ctx.fillRect(0, 0, 1, 1);
-        const d = [...ctx.getImageData(0, 0, 1, 1).data];
-        return [d[0], d[1], d[2]];
+    // https://stackoverflow.com/a/11068286
+    static Parse(input) {
+        let div = document.createElement('div');
+        div.style.color = input;
+        div.style.display = "hidden";
+        window.document.body.appendChild(div);
+        let m = getComputedStyle(div).color.match(/^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i);
+        window.document.body.removeChild(div);
+        if (m)
+            return [parseInt(m[1]), parseInt(m[2]), parseInt(m[3])];
+        else
+            throw new Error("Colour " + input + " could not be parsed.");
     }
     static Mix(c1, c2, factor) {
         return [
@@ -312,7 +302,7 @@ class SpidersAndMosquitoes {
         const preddeath = 0.1;
         const predbirth = 0.1;
         function init(x, y, initial) {
-            return Math.floor(Math.random() * 3);
+            return (initial && Math.random() < 0.95) ? 0 : Math.floor(Math.random() * 3);
         }
         function step(context) {
             const numpred = context.countMooreNeighborsWrapped((c) => c === 2);

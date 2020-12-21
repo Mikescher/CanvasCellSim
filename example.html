@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Demo</title>
+
+    <style type="text/css">
+        *    { margin: 0; padding: 0; }
+        html { background-color: #FFF; width: 100%; height: 100%; overflow: hidden; }
+        body { width: 100%; height: 100%; }
+
+        canvas { background-color: #FFF; width: calc(100% - 0px); height: calc(100% - 0px); margin: 0; }
+    </style>
+
+    <script type="application/javascript" src="canvascellsim.js"></script>
+    <script type="application/javascript" src="ccs_examples.js"></script>
+</head>
+<body>
+
+<canvas id="output"></canvas>
+
+<script type="application/javascript">
+
+    if (window.location.hash.replace("#", "") === "pentomino") {
+        automata = new CanvasCellSim('#output', 4, 2, GameOfLife.pentomino(Colors.Parse('#F00'), Colors.Parse('#222')));
+    } else if (window.location.hash.replace("#", "") === "gol") {
+        automata = new CanvasCellSim('#output', 4, 2, GameOfLife.random(Colors.Parse('#F00'), Colors.Parse('#222')));
+    } else if (window.location.hash.replace("#", "") === "forestfire") {
+        automata = new CanvasCellSim('#output', 4, 2, ForestFire.new(Colors.Parse('#346524'), Colors.Parse('#D04648'), Colors.Parse('#FFF')));
+    } else if (window.location.hash.replace("#", "") === "mosquitoes") {
+        automata = new CanvasCellSim('#output', 6, 2, SpidersAndMosquitoes.new(Colors.Parse('#FF0055'), Colors.Parse('#DDDD33'), Colors.Parse('#000000')));
+    } else if (window.location.hash.replace("#", "") === "cyclic") {
+        automata = new CanvasCellSim('#output', 8, 2, Cyclic.new());
+    } else if (window.location.hash.replace("#", "") === "cyclic2") {
+        automata = new CanvasCellSim('#output', 8, 2, Cyclic2.new());
+    } else if (window.location.hash.replace("#", "") === "caves") {
+        automata = new CanvasCellSim('#output', 4, 2, Caves.new(Colors.Parse('#FFF'), Colors.Parse('#444')));
+    } else {
+        automata = new CanvasCellSim('#output', 4, 2, GameOfLife.empty(Colors.Parse('#F00'), Colors.Parse('#222')));
+    }
+
+    automata.startDrawing();
+    automata.startStepping(64);
+
+</script>
+
+</body>
+</html>
