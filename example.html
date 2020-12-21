@@ -22,25 +22,67 @@
 <script type="application/javascript">
 
     if (window.location.hash.replace("#", "") === "pentomino") {
-        automata = new CanvasCellSim('#output', 4, 2, GameOfLife.pentomino(Colors.Parse('#F00'), Colors.Parse('#222')));
+        automata = new CanvasCellSim('#output', 4, 2, GameOfLife.pentomino(Colors.Parse('#222'), Colors.Parse('#BBB')));
+        automata.startDrawing();
+        automata.startStepping(64);
     } else if (window.location.hash.replace("#", "") === "gol") {
-        automata = new CanvasCellSim('#output', 4, 2, GameOfLife.random(Colors.Parse('#F00'), Colors.Parse('#222')));
+        automata = new CanvasCellSim('#output', 4, 2, GameOfLife.random(Colors.Parse('#0BB'), Colors.Parse('#222'), 128));
+        automata.startDrawing();
+        automata.startStepping(64);
+    } else if (window.location.hash.replace("#", "") === "gol2") {
+        automata = new CanvasCellSim('#output', 4, 2, GameOfLife.random_fading(Colors.Parse('#FF0'), Colors.Parse('#111'), 128));
+        automata.startDrawing();
+        automata.startStepping(64);
     } else if (window.location.hash.replace("#", "") === "forestfire") {
         automata = new CanvasCellSim('#output', 4, 2, ForestFire.new(Colors.Parse('#346524'), Colors.Parse('#D04648'), Colors.Parse('#FFF')));
+        automata.startDrawing();
+        automata.startStepping(64);
     } else if (window.location.hash.replace("#", "") === "mosquitoes") {
         automata = new CanvasCellSim('#output', 6, 2, SpidersAndMosquitoes.new(Colors.Parse('#FF0055'), Colors.Parse('#DDDD33'), Colors.Parse('#000000')));
+        automata.startDrawing();
+        automata.startStepping(64);
+        automata.ffwd(64)
     } else if (window.location.hash.replace("#", "") === "cyclic") {
         automata = new CanvasCellSim('#output', 8, 2, Cyclic.new());
+        automata.startDrawing();
+        automata.startStepping(64);
     } else if (window.location.hash.replace("#", "") === "cyclic2") {
         automata = new CanvasCellSim('#output', 8, 2, Cyclic2.new());
+        automata.startDrawing();
+        automata.startStepping(64);
     } else if (window.location.hash.replace("#", "") === "caves") {
         automata = new CanvasCellSim('#output', 4, 2, Caves.new(Colors.Parse('#FFF'), Colors.Parse('#444')));
-    } else {
-        automata = new CanvasCellSim('#output', 4, 2, GameOfLife.empty(Colors.Parse('#F00'), Colors.Parse('#222')));
+        automata.ffwd(1);
+        automata.startDrawing();
+        automata.startStepping(128);
+    } else if (window.location.hash.replace("#", "") === "maze") {
+        automata = new CanvasCellSim('#output', 4, 2, Maze.new(Colors.Parse('#FFF'), Colors.Parse('#444')));
+        automata.startDrawing();
+        automata.startStepping(48);
+    } else if (window.location.hash.replace("#", "") === "seed") {
+        automata = new CanvasCellSim('#output', 8, 0, Seed.new(Colors.Parse('#F88'), Colors.Parse('#222')));
+        automata.startDrawing();
+        automata.startStepping(48);
+    } else if (window.location.hash.replace("#", "") === "seed2") {
+        automata = new CanvasCellSim('#output', 10, 0, Seed2.new(Colors.Parse('#22C'), Colors.Parse('#222')));
+        automata.startDrawing();
+        automata.startStepping(96);
+    } else if (window.location.hash.replace("#", "") === "lwd") {
+        automata = new CanvasCellSim('#output', 10, 0, LifeLike.fromRuleString("B3/S012345678", true, true, false, Colors.Parse('#CCC'), Colors.Parse('#464')));
+        for (let x=-1; x<=1; x++) for (let y=-1; y<=1; y++) automata.set(x, y, Math.random()<0.5);
+        automata.startDrawing();
+        automata.startStepping(256);
+    } else if (window.location.hash.replace("#", "") === "flock") {
+        automata = new CanvasCellSim('#output', 8, 0, LifeLike.fromRuleString("B3/S12", true, false, true, Colors.Parse('#CCC'), Colors.Parse('#464')));
+        automata.startDrawing();
+        automata.startStepping(128);
+    } else if (window.location.hash.replace("#", "") === "maze2") {
+        automata = new CanvasCellSim('#output', 4, 0, LifeLike.fromRuleString("B3/S1234", true, false, false, Colors.Parse('#080808'), Colors.Parse('#EEEEEE')));
+        for (let x=-2; x<=2; x++) for (let y=-2; y<=2; y++) automata.set(x, y, Math.random()<0.5);
+        automata.startDrawing();
+        automata.startStepping(24);
     }
 
-    automata.startDrawing();
-    automata.startStepping(64);
 
 </script>
 

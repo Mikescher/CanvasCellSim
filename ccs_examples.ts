@@ -47,7 +47,7 @@ class Colors
 
 class GameOfLife
 {
-    static random(colorOn: Color, colorOff: Color): GameOfLife
+    public static random(colorOn: Color, colorOff: Color, radius: number): CCSAutomata<boolean>
     {
         const strColorOn  = Colors.ToCSS(colorOn);
         const strColorOff = Colors.ToCSS(colorOff);
@@ -55,6 +55,8 @@ class GameOfLife
         function init(x:number, y:number, initial:boolean): boolean
         {
             if (!initial) return false;
+            if (Math.abs(x)>radius || Math.abs(y)>radius) return false;
+            if ((x*x+y*y)>radius*radius) return false;
             return Math.random()>0.5;
         }
 
@@ -86,7 +88,7 @@ class GameOfLife
         return new CCSAutomata<boolean>(init, step, apply, color)
     }
 
-    static empty(colorOn: Color, colorOff: Color): GameOfLife
+    public static empty(colorOn: Color, colorOff: Color): CCSAutomata<boolean>
     {
         const strColorOn  = Colors.ToCSS(colorOn);
         const strColorOff = Colors.ToCSS(colorOff);
@@ -124,7 +126,7 @@ class GameOfLife
         return new CCSAutomata<boolean>(init, step, apply, color)
     }
 
-    static pentomino(colorOn: Color, colorOff: Color): GameOfLife
+    public static pentomino(colorOn: Color, colorOff: Color): CCSAutomata<boolean>
     {
         const strColorOn  = Colors.ToCSS(colorOn);
         const strColorOff = Colors.ToCSS(colorOff);
@@ -169,16 +171,69 @@ class GameOfLife
 
         return new CCSAutomata<boolean>(init, step, apply, color)
     }
+
+    public static random_fading(colorOn: Color, colorOff: Color, radius: number): CCSAutomata<number>
+    {
+        const id_on = 8;
+
+        const colors = [
+            Colors.ToCSS(colorOff),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 1/8)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 2/8)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 3/8)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 4/8)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 5/8)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 6/8)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 7/8)),
+            Colors.ToCSS(colorOn),
+        ]
+
+        function init(x:number, y:number, initial:boolean): number
+        {
+            if (!initial) return 0;
+            if (Math.abs(x)>radius || Math.abs(y)>radius) return 0;
+            if ((x*x+y*y)>radius*radius) return 0;
+            return Math.random()>0.5 ? id_on : 0;
+        }
+
+        function step(context: CanvasCellSimContext<number>): boolean
+        {
+            const n = context.countMooreNeighborsWrapped((v) => v==id_on);
+
+            if (context.value === id_on)
+            {
+                if (n < 2 || n > 3) { context.value = id_on-1; return true; }
+            }
+            else
+            {
+                if (n === 3) { context.value = id_on; return true; }
+                if (context.value > 0) { context.value--; return true; }
+            }
+            return false;
+        }
+
+        function apply(src: number, _: number): number
+        {
+            return src;
+        }
+
+        function color(cell: number): string
+        {
+            return colors[cell];
+        }
+
+        return new CCSAutomata<number>(init, step, apply, color)
+    }
 }
 
 class ForestFire
 {
-    static new(colorTree: Color, colorFire: Color, colorBackground: Color): ForestFire
+    public static new(colorTree: Color, colorFire: Color, colorBackground: Color): CCSAutomata<number>
     {
         return ForestFire.custom(colorTree, colorFire, colorBackground, 0.000025, 0.01);
     }
 
-    static custom(colTree: Color, colFire: Color, colBackground: Color, chanceIgnite: number, chanceGrow: number): ForestFire
+    public static custom(colTree: Color, colFire: Color, colBackground: Color, chanceIgnite: number, chanceGrow: number): CCSAutomata<number>
     {
         let colors: string[] = [];
         colors.push(Colors.ToCSS(colBackground));
@@ -253,7 +308,7 @@ class ForestFire
 
 class Cyclic
 {
-    static new(): Cyclic
+    public static new(): CCSAutomata<number>
     {
         let colors: string[] = [
             Colors.ToCSS(Colors.Parse('rgba(255,0,0,1)')!),
@@ -302,7 +357,7 @@ class Cyclic
 
 class Cyclic2
 {
-    static new(): Cyclic
+    public static new(): CCSAutomata<number>
     {
         let colors: string[] = [
             Colors.ToCSS(Colors.Parse('rgba(255,0,0,1)')!),
@@ -351,7 +406,7 @@ class Cyclic2
 
 class SpidersAndMosquitoes
 {
-    static new(colSpiders: Color, colMosquitoes: Color, colHumans: Color): Cyclic
+    public static new(colSpiders: Color, colMosquitoes: Color, colHumans: Color): CCSAutomata<number>
     {
         const strColSpiders    = Colors.ToCSS(colSpiders);
         const strColMosquitoes = Colors.ToCSS(colMosquitoes);
@@ -412,7 +467,7 @@ class SpidersAndMosquitoes
 
 class Caves
 {
-    static new(colEmpty: Color, colStone: Color): Cyclic
+    public static new(colEmpty: Color, colStone: Color): CCSAutomata<boolean>
     {
         const strColEmpty = Colors.ToCSS(colEmpty);
         const strColStone = Colors.ToCSS(colStone);
@@ -445,6 +500,271 @@ class Caves
         function color(cell: boolean): string
         {
             return cell ? strColEmpty : strColStone;
+        }
+
+        return new CCSAutomata<boolean>(init, step, apply, color)
+    }
+}
+
+class Maze
+{
+    public static new(colEmpty: Color, colStone: Color): CCSAutomata<boolean>
+    {
+        const strColEmpty = Colors.ToCSS(colEmpty);
+        const strColStone = Colors.ToCSS(colStone);
+
+        function init(x:number, y:number, initial:boolean): boolean
+        {
+            if (initial && Math.abs(x) < 12 && Math.abs(y) < 12)  return Math.random() > 0.5;
+            return false;
+        }
+
+        function step(context: CanvasCellSimContext<boolean>): boolean
+        {
+            const n = context.countMooreNeighborsClamped((v) => v, false);
+
+            if (context.value)
+            {
+                if (n == 0 || n > 5) { context.value = false; return true; }
+            }
+            else
+            {
+                if (n === 3) { context.value = true; return true; }
+            }
+            return false;
+        }
+
+        function apply(src: boolean, _: boolean): boolean
+        {
+            return src;
+        }
+
+        function color(cell: boolean): string
+        {
+            return cell ? strColEmpty : strColStone;
+        }
+
+        return new CCSAutomata<boolean>(init, step, apply, color)
+    }
+}
+
+class Seed
+{
+    public static new(colEmpty: Color, colStone: Color): CCSAutomata<boolean>
+    {
+        const strColEmpty = Colors.ToCSS(colEmpty);
+        const strColStone = Colors.ToCSS(colStone);
+
+        function init(x:number, y:number, initial:boolean): boolean
+        {
+            if (initial && Math.abs(x) < 3 && Math.abs(y) < 3) return Math.random() > 0.5;
+            return false;
+        }
+
+        function step(context: CanvasCellSimContext<boolean>): boolean
+        {
+            if (context.value)
+            {
+                context.value = false; return true;
+            }
+            else
+            {
+                const n = context.countMooreNeighborsClamped((v) => v, false);
+                if (n === 2) { context.value = true; return true; }
+            }
+            return false;
+        }
+
+        function apply(src: boolean, _: boolean): boolean
+        {
+            return src;
+        }
+
+        function color(cell: boolean): string
+        {
+            return cell ? strColEmpty : strColStone;
+        }
+
+        return new CCSAutomata<boolean>(init, step, apply, color)
+    }
+}
+
+class Seed2
+{
+    public static new(colOn: Color, colDead: Color): CCSAutomata<number>
+    {
+        let colors = [
+            Colors.ToCSS(colDead),
+            Colors.ToCSS(Colors.Mix(colDead, colOn, 1/4)),
+            Colors.ToCSS(Colors.Mix(colDead, colOn, 2/4)),
+            Colors.ToCSS(Colors.Mix(colDead, colOn, 3/4)),
+            Colors.ToCSS(colOn)
+        ];
+
+        function init(x:number, y:number, initial:boolean): number
+        {
+            if (initial && Math.abs(x) < 3 && Math.abs(y) < 3) return Math.random() > 0.5 ? 4 : 0;
+            return 0;
+        }
+
+        function step(context: CanvasCellSimContext<number>): boolean
+        {
+            if (context.value === 4)
+            {
+                context.value = 3; return true;
+            }
+            else if (context.value === 3 || context.value === 2 || context.value === 1)
+            {
+                const n = context.countMooreNeighborsClamped((v) => v==4, 0);
+                if (n === 2) { context.value = 4; return true; }
+                context.value = context.value - 1;
+                return true;
+            }
+            else if (context.value === 0)
+            {
+                const n = context.countMooreNeighborsClamped((v) => v==4, 0);
+                if (n === 2) { context.value = 4; return true; }
+            }
+            return false;
+        }
+
+        function apply(src: number, _: number): number
+        {
+            return src;
+        }
+
+        function color(cell: number): string
+        {
+            return colors[cell];
+        }
+
+        return new CCSAutomata<number>(init, step, apply, color)
+    }
+}
+
+class LifeLike
+{
+    public static fromRuleString(ruleString: string, moore: boolean, wrap: boolean, random: boolean, colOff: Color, colOn: Color): CCSAutomata<boolean>
+    {
+        let [b, s] = ruleString.split("/");
+
+        if (!b.startsWith("B")) throw "Invalid rulestring";
+        if (!s.startsWith("S")) throw "Invalid rulestring";
+
+        let birth = [];
+        for (let i=1; i<b.length; i++) birth.push(parseInt(b[i]));
+
+        let survive = [];
+        for (let i=1; i<s.length; i++) survive.push(parseInt(s[i]));
+
+        return LifeLike.new(birth, survive, moore, wrap, random, colOff, colOn);
+    }
+
+    public static fromRuleInteger(ruleInt: number, wrap: boolean, random: boolean, colOff: Color, colOn: Color): CCSAutomata<boolean>
+    {
+        let bin = (ruleInt >>> 0).toString(2).padStart(18, '0');
+
+        let birth = [];
+        let survive = [];
+
+        if (bin[17]==='1') birth.push(0);
+        if (bin[16]==='1') birth.push(1);
+        if (bin[15]==='1') birth.push(2);
+        if (bin[14]==='1') birth.push(3);
+        if (bin[13]==='1') birth.push(4);
+        if (bin[12]==='1') birth.push(5);
+        if (bin[11]==='1') birth.push(6);
+        if (bin[10]==='1') birth.push(7);
+        if (bin[ 9]==='1') birth.push(8);
+
+        if (bin[ 8]==='1') survive.push(0);
+        if (bin[ 7]==='1') survive.push(1);
+        if (bin[ 6]==='1') survive.push(2);
+        if (bin[ 5]==='1') survive.push(3);
+        if (bin[ 4]==='1') survive.push(4);
+        if (bin[ 3]==='1') survive.push(5);
+        if (bin[ 2]==='1') survive.push(6);
+        if (bin[ 1]==='1') survive.push(7);
+        if (bin[ 0]==='1') survive.push(8);
+
+        return LifeLike.new(birth, survive, true, wrap, random, colOff, colOn);
+    }
+
+    public static new(birth: number[], survive: number[], moore: boolean, wrap: boolean, random: boolean, colOff: Color, colOn: Color): CCSAutomata<boolean>
+    {
+        const strCol0 = Colors.ToCSS(colOff);
+        const strCol1 = Colors.ToCSS(colOn);
+
+        function init(x:number, y:number, initial:boolean): boolean
+        {
+            if (random) return Math.random() < 0.5;
+            return false;
+        }
+
+        function step(context: CanvasCellSimContext<boolean>): boolean
+        {
+            if (context.value)
+            {
+                if (survive.length==0) { context.value = false; return true; }
+
+                if (moore  && survive.length==9) return false;
+                if (!moore && survive.length==5) return false;
+
+                let n;
+                if (moore) {
+                    if (wrap) {
+                        n = context.countMooreNeighborsWrapped((v) => v);
+                    } else {
+                        n = context.countMooreNeighborsClamped((v) => v, false);
+                    }
+                } else {
+                    if (wrap) {
+                        n = context.countNeumannNeighborsWrapped((v) => v);
+                    } else {
+                        n = context.countNeumannNeighborsClamped((v) => v, false);
+                    }
+                }
+
+                if (survive.includes(n)) return false;
+                context.value = false;
+                return true;
+            }
+            else
+            {
+                if (birth.length==0) return false;
+
+                if (moore  && birth.length==9) { context.value = true; return true; }
+                if (!moore && birth.length==5) { context.value = true; return true; }
+
+                let n;
+                if (moore) {
+                    if (wrap) {
+                        n = context.countMooreNeighborsWrapped((v) => v);
+                    } else {
+                        n = context.countMooreNeighborsClamped((v) => v, false);
+                    }
+                } else {
+                    if (wrap) {
+                        n = context.countNeumannNeighborsWrapped((v) => v);
+                    } else {
+                        n = context.countNeumannNeighborsClamped((v) => v, false);
+                    }
+                }
+
+                if (birth.includes(n)) { context.value = true; return true; }
+                return false;
+            }
+            return false;
+        }
+
+        function apply(src: boolean, _: boolean): boolean
+        {
+            return src;
+        }
+
+        function color(cell: boolean): string
+        {
+            return cell ? strCol1 : strCol0;
         }
 
         return new CCSAutomata<boolean>(init, step, apply, color)

@@ -47,13 +47,22 @@ class CanvasCellSim {
         }
     }
     set(x, y, value) {
+        const was_init = this.fully_init;
         this.tryInit();
+        if (Math.abs(2 * x) > this.grid[0].length)
+            this.updateGridWidth(Math.abs(2 * x), !was_init);
+        if (Math.abs(2 * y) > this.grid.length)
+            this.updateGridHeight(Math.abs(2 * y), !was_init);
         let rx = x + this.offsetX;
         let ry = y + this.offsetY;
-        if (rx < 0 || ry < 0 || rx >= this.offsetX || ry >= this.offsetY)
+        if (rx < 0 || ry < 0 || rx >= this.grid[0].length || ry >= this.grid.length)
             return false;
         this.grid[ry][rx].value = value;
         return true;
+    }
+    ffwd(steps) {
+        for (let i = 0; i < steps; i++)
+            this.step();
     }
     step() {
         this.fixGridSizeX(!this.fully_init);
@@ -87,6 +96,10 @@ class CanvasCellSim {
         }
         if (curr === calc)
             return;
+        this.updateGridWidth(calc, initial);
+    }
+    updateGridWidth(calc, initial) {
+        const curr = this.grid[0].length;
         if (calc > curr) {
             let inc = (calc - curr) / 2;
             for (let y = 0; y < this.grid.length; y++) {
@@ -117,6 +130,10 @@ class CanvasCellSim {
         }
         if (curr === calc)
             return;
+        this.updateGridHeight(calc, initial);
+    }
+    updateGridHeight(calc, initial) {
+        const curr = this.grid.length;
         if (calc > curr) {
             let inc = (calc - curr) / 2;
             for (let i = 0; i < inc; i++) {

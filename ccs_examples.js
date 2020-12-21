@@ -36,11 +36,15 @@ Colors.CYAN = [0, 255, 255];
 Colors.YELLOW = [255, 255, 0];
 Colors.dummy_context = null;
 class GameOfLife {
-    static random(colorOn, colorOff) {
+    static random(colorOn, colorOff, radius) {
         const strColorOn = Colors.ToCSS(colorOn);
         const strColorOff = Colors.ToCSS(colorOff);
         function init(x, y, initial) {
             if (!initial)
+                return false;
+            if (Math.abs(x) > radius || Math.abs(y) > radius)
+                return false;
+            if ((x * x + y * y) > radius * radius)
                 return false;
             return Math.random() > 0.5;
         }
@@ -137,6 +141,56 @@ class GameOfLife {
         }
         function color(cell) {
             return cell ? strColorOn : strColorOff;
+        }
+        return new CCSAutomata(init, step, apply, color);
+    }
+    static random_fading(colorOn, colorOff, radius) {
+        const id_on = 8;
+        const colors = [
+            Colors.ToCSS(colorOff),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 1 / 16)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 2 / 16)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 3 / 16)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 4 / 16)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 5 / 16)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 6 / 16)),
+            Colors.ToCSS(Colors.Mix(colorOff, colorOn, 7 / 16)),
+            Colors.ToCSS(colorOn),
+        ];
+        function init(x, y, initial) {
+            if (!initial)
+                return 0;
+            if (Math.abs(x) > radius || Math.abs(y) > radius)
+                return 0;
+            if ((x * x + y * y) > radius * radius)
+                return 0;
+            return Math.random() > 0.5 ? id_on : 0;
+        }
+        function step(context) {
+            const n = context.countMooreNeighborsWrapped((v) => v == id_on);
+            if (context.value === id_on) {
+                if (n < 2 || n > 3) {
+                    context.value = id_on - 1;
+                    return true;
+                }
+            }
+            else {
+                if (n === 3) {
+                    context.value = id_on;
+                    return true;
+                }
+                if (context.value > 0) {
+                    context.value--;
+                    return true;
+                }
+            }
+            return false;
+        }
+        function apply(src, _) {
+            return src;
+        }
+        function color(cell) {
+            return colors[cell];
         }
         return new CCSAutomata(init, step, apply, color);
     }
@@ -377,6 +431,260 @@ class Caves {
         }
         function color(cell) {
             return cell ? strColEmpty : strColStone;
+        }
+        return new CCSAutomata(init, step, apply, color);
+    }
+}
+class Maze {
+    static new(colEmpty, colStone) {
+        const strColEmpty = Colors.ToCSS(colEmpty);
+        const strColStone = Colors.ToCSS(colStone);
+        function init(x, y, initial) {
+            if (initial && Math.abs(x) < 12 && Math.abs(y) < 12)
+                return Math.random() > 0.5;
+            return false;
+        }
+        function step(context) {
+            const n = context.countMooreNeighborsClamped((v) => v, false);
+            if (context.value) {
+                if (n == 0 || n > 5) {
+                    context.value = false;
+                    return true;
+                }
+            }
+            else {
+                if (n === 3) {
+                    context.value = true;
+                    return true;
+                }
+            }
+            return false;
+        }
+        function apply(src, _) {
+            return src;
+        }
+        function color(cell) {
+            return cell ? strColEmpty : strColStone;
+        }
+        return new CCSAutomata(init, step, apply, color);
+    }
+}
+class Seed {
+    static new(colEmpty, colStone) {
+        const strColEmpty = Colors.ToCSS(colEmpty);
+        const strColStone = Colors.ToCSS(colStone);
+        function init(x, y, initial) {
+            if (initial && Math.abs(x) < 3 && Math.abs(y) < 3)
+                return Math.random() > 0.5;
+            return false;
+        }
+        function step(context) {
+            if (context.value) {
+                context.value = false;
+                return true;
+            }
+            else {
+                const n = context.countMooreNeighborsClamped((v) => v, false);
+                if (n === 2) {
+                    context.value = true;
+                    return true;
+                }
+            }
+            return false;
+        }
+        function apply(src, _) {
+            return src;
+        }
+        function color(cell) {
+            return cell ? strColEmpty : strColStone;
+        }
+        return new CCSAutomata(init, step, apply, color);
+    }
+}
+class Seed2 {
+    static new(colOn, colDead) {
+        let colors = [
+            Colors.ToCSS(colDead),
+            Colors.ToCSS(Colors.Mix(colDead, colOn, 1 / 4)),
+            Colors.ToCSS(Colors.Mix(colDead, colOn, 2 / 4)),
+            Colors.ToCSS(Colors.Mix(colDead, colOn, 3 / 4)),
+            Colors.ToCSS(colOn)
+        ];
+        function init(x, y, initial) {
+            if (initial && Math.abs(x) < 3 && Math.abs(y) < 3)
+                return Math.random() > 0.5 ? 4 : 0;
+            return 0;
+        }
+        function step(context) {
+            if (context.value === 4) {
+                context.value = 3;
+                return true;
+            }
+            else if (context.value === 3 || context.value === 2 || context.value === 1) {
+                const n = context.countMooreNeighborsClamped((v) => v == 4, 0);
+                if (n === 2) {
+                    context.value = 4;
+                    return true;
+                }
+                context.value = context.value - 1;
+                return true;
+            }
+            else if (context.value === 0) {
+                const n = context.countMooreNeighborsClamped((v) => v == 4, 0);
+                if (n === 2) {
+                    context.value = 4;
+                    return true;
+                }
+            }
+            return false;
+        }
+        function apply(src, _) {
+            return src;
+        }
+        function color(cell) {
+            return colors[cell];
+        }
+        return new CCSAutomata(init, step, apply, color);
+    }
+}
+class LifeLike {
+    static fromRuleString(ruleString, moore, wrap, random, colOff, colOn) {
+        let [b, s] = ruleString.split("/");
+        if (!b.startsWith("B"))
+            throw "Invalid rulestring";
+        if (!s.startsWith("S"))
+            throw "Invalid rulestring";
+        let birth = [];
+        for (let i = 1; i < b.length; i++)
+            birth.push(parseInt(b[i]));
+        let survive = [];
+        for (let i = 1; i < s.length; i++)
+            survive.push(parseInt(s[i]));
+        return LifeLike.new(birth, survive, moore, wrap, random, colOff, colOn);
+    }
+    static fromRuleInteger(ruleInt, wrap, random, colOff, colOn) {
+        let bin = (ruleInt >>> 0).toString(2).padStart(18, '0');
+        let birth = [];
+        let survive = [];
+        if (bin[17] === '1')
+            birth.push(0);
+        if (bin[16] === '1')
+            birth.push(1);
+        if (bin[15] === '1')
+            birth.push(2);
+        if (bin[14] === '1')
+            birth.push(3);
+        if (bin[13] === '1')
+            birth.push(4);
+        if (bin[12] === '1')
+            birth.push(5);
+        if (bin[11] === '1')
+            birth.push(6);
+        if (bin[10] === '1')
+            birth.push(7);
+        if (bin[9] === '1')
+            birth.push(8);
+        if (bin[8] === '1')
+            survive.push(0);
+        if (bin[7] === '1')
+            survive.push(1);
+        if (bin[6] === '1')
+            survive.push(2);
+        if (bin[5] === '1')
+            survive.push(3);
+        if (bin[4] === '1')
+            survive.push(4);
+        if (bin[3] === '1')
+            survive.push(5);
+        if (bin[2] === '1')
+            survive.push(6);
+        if (bin[1] === '1')
+            survive.push(7);
+        if (bin[0] === '1')
+            survive.push(8);
+        return LifeLike.new(birth, survive, true, wrap, random, colOff, colOn);
+    }
+    static new(birth, survive, moore, wrap, random, colOff, colOn) {
+        const strCol0 = Colors.ToCSS(colOff);
+        const strCol1 = Colors.ToCSS(colOn);
+        function init(x, y, initial) {
+            if (random)
+                return Math.random() < 0.5;
+            return false;
+        }
+        function step(context) {
+            if (context.value) {
+                if (survive.length == 0) {
+                    context.value = false;
+                    return true;
+                }
+                if (moore && survive.length == 9)
+                    return false;
+                if (!moore && survive.length == 5)
+                    return false;
+                let n;
+                if (moore) {
+                    if (wrap) {
+                        n = context.countMooreNeighborsWrapped((v) => v);
+                    }
+                    else {
+                        n = context.countMooreNeighborsClamped((v) => v, false);
+                    }
+                }
+                else {
+                    if (wrap) {
+                        n = context.countNeumannNeighborsWrapped((v) => v);
+                    }
+                    else {
+                        n = context.countNeumannNeighborsClamped((v) => v, false);
+                    }
+                }
+                if (survive.includes(n))
+                    return false;
+                context.value = false;
+                return true;
+            }
+            else {
+                if (birth.length == 0)
+                    return false;
+                if (moore && birth.length == 9) {
+                    context.value = true;
+                    return true;
+                }
+                if (!moore && birth.length == 5) {
+                    context.value = true;
+                    return true;
+                }
+                let n;
+                if (moore) {
+                    if (wrap) {
+                        n = context.countMooreNeighborsWrapped((v) => v);
+                    }
+                    else {
+                        n = context.countMooreNeighborsClamped((v) => v, false);
+                    }
+                }
+                else {
+                    if (wrap) {
+                        n = context.countNeumannNeighborsWrapped((v) => v);
+                    }
+                    else {
+                        n = context.countNeumannNeighborsClamped((v) => v, false);
+                    }
+                }
+                if (birth.includes(n)) {
+                    context.value = true;
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+        function apply(src, _) {
+            return src;
+        }
+        function color(cell) {
+            return cell ? strCol1 : strCol0;
         }
         return new CCSAutomata(init, step, apply, color);
     }
