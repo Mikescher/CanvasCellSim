@@ -246,23 +246,22 @@ class CanvasCellSim<T>
         let width  = this.grid[0].length;
         let height = this.grid.length;
 
-        let canvasWidth = this.canvas.clientWidth;
-        let canvasHeight = this.canvas.clientHeight;
-
         const ctx = this.canvas.getContext('2d', {alpha: false})!;
+        ctx.resetTransform();
+        ctx.scale(this.cellSize, this.cellSize);
         for (let gy = 0; gy < height; gy++)
         {
             for (let gx = 0; gx < width; gx++)
             {
-                const cx = Math.floor(canvasWidth/2)  + (gx-this.offsetX)*this.cellSize - this.cellSize/2;
-                const cy = Math.floor(canvasHeight/2) + (gy-this.offsetY)*this.cellSize - this.cellSize/2;
+                const cx = Math.floor(width/2)  + (gx-this.offsetX);
+                const cy = Math.floor(height/2) + (gy-this.offsetY);
 
                 if (this.grid[gy][gx].dirty || this.allDirty)
                 {
                     this.grid[gy][gx].dirty = false;
 
                     ctx.fillStyle = this.automata.fnColor(this.grid[gy][gx].value);
-                    ctx.fillRect(cx, cy, this.cellSize, this.cellSize);
+                    ctx.fillRect(cx, cy, 1, 1);
                 }
             }
         }
